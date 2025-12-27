@@ -1,0 +1,7 @@
+print "Hello World";
+var a = 10 + 10;
+if a == 20 {
+    print "a is 20"
+} else {
+    print "a is not 20"
+}
