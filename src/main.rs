@@ -73,7 +73,7 @@ fn run(source: &str) -> Result<(), error_type::LoxError> {
             println!("Parsed the tree successfully.\n");
             println!("{}", print_ast(expr));
         }
-        Err(e) => {
+        Err(_e) => {
             return Ok(())
         }
     }

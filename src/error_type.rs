@@ -1,4 +1,4 @@
 pub enum LoxError {
-    FileNotFound,
+    // FileNotFound,
     ParseError
 }

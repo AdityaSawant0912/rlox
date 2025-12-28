@@ -34,8 +34,8 @@ impl Display for Token {
     }
 }
 
-impl Token {
-    pub fn to_string(&self) -> String {
-        return format!("{:?} {} {:?}", self._type, self.lexeme, self.literal)
-    }
-}
+// impl Token {
+//     pub fn to_string(&self) -> String {
+//         return format!("{:?} {} {:?}", self._type, self.lexeme, self.literal)
+//     }
+// }

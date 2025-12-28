@@ -1,11 +1,9 @@
-use std::f32::consts::E;
-
 use crate::{
     error,
     error_type::LoxError,
-    expr::{self, Expr},
-    token::{self, Token},
-    token_type::{self, TokenType},
+    expr::Expr,
+    token::{LiteralType, Token},
+    token_type::TokenType,
 };
 
 pub struct Parser {
@@ -73,12 +71,12 @@ impl Parser {
 
     fn consume(&mut self, _type: TokenType, message: &str) -> Result<Token, LoxError> {
         if self.check(_type) {
-            Ok::<Token, LoxError>(self.advance());
+            return Ok(self.advance());
         }
         Err(self.error(self.peek().clone(), message))
     }
 
-    fn synchronize(&mut self) {
+    fn _synchronize(&mut self) {
         self.advance();
         while !self.is_at_end() {
             if self.previous()._type == TokenType::Semicolon {
@@ -103,17 +101,17 @@ impl Parser {
     fn primary(&mut self) -> Result<Expr, LoxError> {
         if self._match(Vec::from([TokenType::False])) {
             return Ok(Expr::Literal {
-                value: token::LiteralType::Boolean(false),
+                value: LiteralType::Boolean(false),
             });
         }
         if self._match(Vec::from([TokenType::True])) {
             return Ok(Expr::Literal {
-                value: token::LiteralType::Boolean(true),
+                value: LiteralType::Boolean(true),
             });
         }
         if self._match(Vec::from([TokenType::Nil])) {
             return Ok(Expr::Literal {
-                value: token::LiteralType::None,
+                value: LiteralType::None,
             });
         }
         if self._match(Vec::from([TokenType::Number, TokenType::String])) {
@@ -124,7 +122,10 @@ impl Parser {
         if self._match(Vec::from([TokenType::LeftParen])) {
             match self.expression() {
                 Ok(expr) => {
-                    self.consume(TokenType::RightParen, "Expect ')' after expression.");
+                    match self.consume(TokenType::RightParen, "Expect ')' after expression.") {
+                        Ok(_token) => {},
+                        Err(_e) => {}
+                    }
                     return Ok(Expr::Grouping {
                         expression: Box::new(expr),
                     });
