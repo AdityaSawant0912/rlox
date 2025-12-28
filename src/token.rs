@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use crate::token_type;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LiteralType {
     Number(f64),
     String(String),
@@ -22,7 +22,7 @@ impl Display for LiteralType {
 
 #[derive(Debug, Clone)]
 pub struct Token{
-    pub r#type: token_type::TokenType,
+    pub _type: token_type::TokenType,
     pub lexeme: String,
     pub literal: LiteralType,
     pub line: usize,
@@ -36,6 +36,6 @@ impl Display for Token {
 
 impl Token {
     pub fn to_string(&self) -> String {
-        return format!("{:?} {} {:?}", self.r#type, self.lexeme, self.literal)
+        return format!("{:?} {} {:?}", self._type, self.lexeme, self.literal)
     }
 }

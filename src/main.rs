@@ -4,13 +4,18 @@ use std::fs;
 use std::io::Write;
 use std::process;
 
+use crate::ast_printer::print_ast;
 use crate::scanner::Scanner;
 use crate::token::Token;
+use crate::parser::Parser;
 mod error;
 mod error_type;
 mod token;
 mod token_type;
 mod scanner;
+mod expr;
+mod parser;
+mod ast_printer;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -59,8 +64,19 @@ fn run(source: &str) -> Result<(), error_type::LoxError> {
     let mut scanner = Scanner::new(source.to_string());
 
     let tokens: Vec<Token> = scanner.scan_tokens();
-    for token in tokens {
-        println!("{}", token)
+    // for token in &tokens {
+    //     println!("{}", token)
+    // }
+    let mut parser = Parser::new(tokens);
+    match parser.parse() {
+        Ok(expr) => {
+            println!("Parsed the tree successfully.\n");
+            println!("{}", print_ast(expr));
+        }
+        Err(e) => {
+            return Ok(())
+        }
     }
+
     Ok(())
 }

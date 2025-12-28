@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use std::collections::HashMap;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TokenType{
     // Single-character tokens.
     LeftParen, RightParen, LeftBrace, RightBrace,

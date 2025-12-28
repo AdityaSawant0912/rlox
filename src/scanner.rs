@@ -41,7 +41,7 @@ impl Scanner {
             self.scan_token()
         }
         self.tokens.push(Token {
-            r#type: TokenType::Eof,
+            _type: TokenType::Eof,
             lexeme: String::new(),
             literal: LiteralType::None,
             line: self.line,
@@ -95,14 +95,14 @@ impl Scanner {
         return false;
     }
 
-    // fn add_token(&mut self, r#type: TokenType) { // Rust doesn't support function overloading.
-    //     self.add_token(r#type, LiteralType::None);
+    // fn add_token(&mut self, _type: TokenType) { // Rust doesn't support function overloading.
+    //     self.add_token(_type, LiteralType::None);
     // }
 
-    fn add_token(&mut self, r#type: TokenType, literal: LiteralType) {
+    fn add_token(&mut self, _type: TokenType, literal: LiteralType) {
         let text = &self.source[self.start..self.current];
         self.tokens.push(Token {
-            r#type: r#type,
+            _type: _type,
             lexeme: text.to_string(),
             literal: literal,
             line: self.line,
@@ -153,13 +153,13 @@ impl Scanner {
         let keywords = create_keywords();
         let text = self.source[self.start..self.current].to_string();
         let token_type = keywords.get(text.as_str());
-        let r#type;
+        let _type;
         match token_type {
-            Some(t) => {r#type = t.clone()},
-            None => r#type = TokenType::Identifier
+            Some(t) => {_type = t.clone()},
+            None => _type = TokenType::Identifier
         }
 
-        self.add_token(r#type, LiteralType::None);
+        self.add_token(_type, LiteralType::None);
     }
 
     fn scan_token(&mut self) {
