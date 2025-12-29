@@ -2,11 +2,11 @@ use crate::{error_type::LoxError, interpreter::interpret, stmt::Stmt, token::lit
 
 pub fn execute(stmt: Stmt) -> Result<(), LoxError> {
     match stmt {
-        Stmt::Print { expression } => {
-            interpret(expression);
+        Stmt::Expression { expression } => {
+            interpret(expression)?;
             return Ok(());
         }
-        Stmt::Expression { expression } => match interpret(expression) {
+        Stmt::Print { expression } => match interpret(expression) {
             Ok(value) => {
                 println!("{}", literal_stringify(value));
                 return Ok(());
@@ -15,5 +15,8 @@ pub fn execute(stmt: Stmt) -> Result<(), LoxError> {
                 return Err(e);
             }
         },
+        Stmt::Var { name, initializer } => {
+            Ok(())
+        }
     }
 }

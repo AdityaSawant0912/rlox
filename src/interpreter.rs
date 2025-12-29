@@ -194,6 +194,9 @@ pub fn interpret(expr: Expr) -> Result<LiteralType, LoxError> {
                 }
                 _ => return Ok(LiteralType::None),
             }
+        },
+        Expr::Variable { name } => {
+            
         }
     }
 }

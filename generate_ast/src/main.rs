@@ -9,7 +9,8 @@ fn define_ast(output_path: &str, basename: &str, types: Vec<&str>) -> std::io::R
 
     file.write(b"use crate::{\n")?;
     if basename == "Stmt" {
-        file.write(b"    expr::Expr\n")?;
+        file.write(b"    expr::Expr,\n")?;
+        file.write(b"    token::Token\n")?;
     }
     if basename == "Expr" {
         file.write(b"    token::{LiteralType, Token}\n")?;
@@ -47,15 +48,17 @@ fn main() -> std::io::Result<()> {
             "Binary   : left Box<Expr>, operator Token, right Box<Expr>",
             "Grouping : expression Box<Expr>",
             "Literal  : value LiteralType",
-            "Unary    : operator Token , right Box<Expr>",
+            "Unary    : operator Token, right Box<Expr>",
+            "Variable : name Token",
         ]),
     )?;
     define_ast(
         output_path,
         "Stmt",
         Vec::from([
-            "Expression   : expression Expr",
-            "Print : expression Expr",
+            "Expression : expression Expr",
+            "Print      : expression Expr",
+            "Var        : name Token, initializer Expr"
         ]),
     )?;
     Ok(())

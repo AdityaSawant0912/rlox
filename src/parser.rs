@@ -77,7 +77,7 @@ impl Parser {
         Err(self.error(self.peek().clone(), message))
     }
 
-    fn _synchronize(&mut self) {
+    fn synchronize(&mut self) {
         self.advance();
         while !self.is_at_end() {
             if self.previous()._type == TokenType::Semicolon {
@@ -119,6 +119,9 @@ impl Parser {
             return Ok(Expr::Literal {
                 value: self.previous().literal.clone(),
             });
+        }
+        if self._match(Vec::from([TokenType::Var])) {
+            return Ok(Expr::Variable { name: self.previous() });
         }
         if self._match(Vec::from([TokenType::LeftParen])) {
             match self.expression() {
@@ -255,7 +258,7 @@ impl Parser {
         match self.expression() {
             Ok(expr) => match self.consume(TokenType::Semicolon, "Expect ';' after value.") {
                 Ok(_token) => return Ok(Stmt::Print { expression: expr }),
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             },
             Err(e) => return Err(e),
         }
@@ -264,7 +267,7 @@ impl Parser {
         match self.expression() {
             Ok(expr) => match self.consume(TokenType::Semicolon, "Expect ';' after expression.") {
                 Ok(_token) => return Ok(Stmt::Expression { expression: expr }),
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             },
             Err(e) => return Err(e),
         }
@@ -277,13 +280,43 @@ impl Parser {
         return self.expression_statement();
     }
 
+    fn var_declaration(&mut self) -> Result<Stmt, LoxError> {
+        let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
+        let mut initializer: Expr = Expr::Literal { value: LiteralType::None };
+        if self._match(Vec::from([TokenType::Equal])) {
+            initializer = self.expression()?;
+        }
+        self.consume(TokenType::Semicolon, "Expected ';' after variable declaration")?;
+        return Ok( Stmt::Var { name, initializer })
+    }
+
+    fn declaration(&mut self) -> Option<Stmt> {
+        if self._match(Vec::from([TokenType::Var])) {
+            match self.var_declaration() {
+                Ok(stmt) => return Some(stmt),
+                Err(e) => {
+                    self.synchronize();
+                    return None;
+                }
+            }
+        }
+        match self.statement() {
+            Ok(stmt) => return Some(stmt),
+            Err(e) => {
+                self.synchronize();
+                return None;
+            }
+        }
+    }
+
     pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
         let mut statements: Vec<Stmt> = Vec::new();
         while !self.is_at_end() {
-            match self.statement() {
-                Ok(stmt) => statements.push(stmt),
-                Err(e) => return Err(e),
+            match self.declaration() {
+                Some(stmt) => statements.push(stmt),
+                None => continue
             }
+            
         }
         return Ok(statements);
     }

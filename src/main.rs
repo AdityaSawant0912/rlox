@@ -4,15 +4,11 @@ use std::io;
 use std::io::Write;
 use std::process;
 
-use crate::ast_printer::print_ast;
 use crate::executer::execute;
-use crate::expr::Expr;
-use crate::interpreter::interpret;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
 use crate::stmt::Stmt;
 use crate::token::Token;
-use crate::token::literal_stringify;
 mod ast_printer;
 mod error;
 mod error_type;
