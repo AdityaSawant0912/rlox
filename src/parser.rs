@@ -2,6 +2,7 @@ use crate::{
     error,
     error_type::LoxError,
     expr::Expr,
+    stmt::Stmt,
     token::{LiteralType, Token},
     token_type::TokenType,
 };
@@ -123,7 +124,7 @@ impl Parser {
             match self.expression() {
                 Ok(expr) => {
                     match self.consume(TokenType::RightParen, "Expect ')' after expression.") {
-                        Ok(_token) => {},
+                        Ok(_token) => {}
                         Err(_e) => {}
                     }
                     return Ok(Expr::Grouping {
@@ -250,7 +251,40 @@ impl Parser {
         self.equality()
     }
 
-    pub fn parse(&mut self) -> Result<Expr, LoxError> {
-        self.expression()
+    fn print_statement(&mut self) -> Result<Stmt, LoxError> {
+        match self.expression() {
+            Ok(expr) => match self.consume(TokenType::Semicolon, "Expect ';' after value.") {
+                Ok(_token) => return Ok(Stmt::Print { expression: expr }),
+                Err(e) => return Err(e)
+            },
+            Err(e) => return Err(e),
+        }
+    }
+    fn expression_statement(&mut self) -> Result<Stmt, LoxError> {
+        match self.expression() {
+            Ok(expr) => match self.consume(TokenType::Semicolon, "Expect ';' after expression.") {
+                Ok(_token) => return Ok(Stmt::Expression { expression: expr }),
+                Err(e) => return Err(e)
+            },
+            Err(e) => return Err(e),
+        }
+    }
+
+    fn statement(&mut self) -> Result<Stmt, LoxError> {
+        if self._match(Vec::from([TokenType::Print])) {
+            return self.print_statement();
+        }
+        return self.expression_statement();
+    }
+
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+        while !self.is_at_end() {
+            match self.statement() {
+                Ok(stmt) => statements.push(stmt),
+                Err(e) => return Err(e),
+            }
+        }
+        return Ok(statements);
     }
 }

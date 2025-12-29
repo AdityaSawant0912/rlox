@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::{fmt::{Debug, Display}};
 use crate::token_type;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -31,6 +31,15 @@ pub struct Token{
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(self, f)
+    }
+}
+
+pub fn literal_stringify(value: LiteralType) -> String {
+    match value {
+        LiteralType::None => return "nil".to_string(),
+        LiteralType::String(s) => return s,
+        LiteralType:: Boolean(b) => return format!("{b}"),
+        LiteralType:: Number(n) => return format!("{n}")
     }
 }
 

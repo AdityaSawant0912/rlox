@@ -2,21 +2,21 @@ use std::fs::File;
 use std::io::Write;
 
 
-fn define_visitor(mut file: &File, basename: &str, types: &Vec<&str>) -> std::io::Result<()> {
-    file.write(b"")?;
-    Ok(())
-}
 
 
 fn define_ast(output_path: &str, basename: &str, types: Vec<&str>) -> std::io::Result<()> {
     let mut file = File::create(format!("{}/{}.rs", output_path, basename.to_lowercase()))?;
 
     file.write(b"use crate::{\n")?;
-    file.write(b"    token::{LiteralType, Token}\n")?;
+    if basename == "Stmt" {
+        file.write(b"    expr::Expr\n")?;
+    }
+    if basename == "Expr" {
+        file.write(b"    token::{LiteralType, Token}\n")?;
+    }
     file.write(b"};\n")?;
     file.write(b"\n")?;
 
-    let _ = define_visitor(&file, basename, &types);
     
     file.write(format!("pub enum {} {{\n", basename).as_bytes())?;
     
@@ -38,9 +38,9 @@ fn define_ast(output_path: &str, basename: &str, types: Vec<&str>) -> std::io::R
     Ok(())
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let output_path = "../src";
-    let _ = define_ast(
+    define_ast(
         output_path,
         "Expr",
         Vec::from([
@@ -49,6 +49,14 @@ fn main() {
             "Literal  : value LiteralType",
             "Unary    : operator Token , right Box<Expr>",
         ]),
-    );
-    return;
+    )?;
+    define_ast(
+        output_path,
+        "Stmt",
+        Vec::from([
+            "Expression   : expression Expr",
+            "Print : expression Expr",
+        ]),
+    )?;
+    Ok(())
 }

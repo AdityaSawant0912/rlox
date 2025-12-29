@@ -1,5 +1,4 @@
-use crate::{token::Token, token_type::TokenType};
-
+use crate::{error_type::LoxError, token::Token, token_type::TokenType};
 
 pub fn token_error(token: Token, message:&str) {
     if token._type == TokenType::Eof {

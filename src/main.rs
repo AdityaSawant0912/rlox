@@ -1,21 +1,29 @@
 use std::env;
-use std::io;
 use std::fs;
+use std::io;
 use std::io::Write;
 use std::process;
 
 use crate::ast_printer::print_ast;
-use crate::scanner::Scanner;
-use crate::token::Token;
+use crate::executer::execute;
+use crate::expr::Expr;
+use crate::interpreter::interpret;
 use crate::parser::Parser;
+use crate::scanner::Scanner;
+use crate::stmt::Stmt;
+use crate::token::Token;
+use crate::token::literal_stringify;
+mod ast_printer;
 mod error;
 mod error_type;
+mod executer;
+mod expr;
+mod interpreter;
+mod parser;
+mod scanner;
+mod stmt;
 mod token;
 mod token_type;
-mod scanner;
-mod expr;
-mod parser;
-mod ast_printer;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -28,20 +36,19 @@ fn main() {
     }
 }
 
-
 fn run_file(file_path: &str) {
-    let contents = fs::read_to_string(file_path)
-        .expect("Failed to read file.");
+    let contents = fs::read_to_string(file_path).expect("Failed to read file.");
     match run(&contents) {
-        Ok(_n) => println!("Wooho!"),
-        Err(_e) => process::exit(65),
+        Ok(()) => process::exit(0),
+        Err(e) => {
+            println!("{}", e);
+            process::exit(65)
+        }
     }
-    
 }
 
-
 fn run_prompt() {
-    loop{
+    loop {
         let mut buffer = String::new();
         print!(">>> ");
         io::stdout().flush().expect("Failed to flush stdout");
@@ -50,32 +57,26 @@ fn run_prompt() {
             .expect("Failed to read line.");
         if buffer.trim() == "" {
             break;
-        } 
-        match run(&buffer) {
-            Ok(_n) => println!("Wooho!"),
-            Err(_e) => process::exit(65),
         }
-
+        match run(&buffer) {
+            Ok(()) => process::exit(0),
+            Err(e) => {
+                println!("{}", e);
+                process::exit(65)
+            }
+        }
     }
 }
-
 
 fn run(source: &str) -> Result<(), error_type::LoxError> {
     let mut scanner = Scanner::new(source.to_string());
 
     let tokens: Vec<Token> = scanner.scan_tokens();
-    // for token in &tokens {
-    //     println!("{}", token)
-    // }
     let mut parser = Parser::new(tokens);
-    match parser.parse() {
-        Ok(expr) => {
-            println!("Parsed the tree successfully.\n");
-            println!("{}", print_ast(expr));
-        }
-        Err(_e) => {
-            return Ok(())
-        }
+    let statements: Vec<Stmt> = parser.parse()?;
+
+    for statement in statements {
+        execute(statement)?;
     }
 
     Ok(())

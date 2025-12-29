@@ -1,18 +1,18 @@
 use crate::{expr::Expr, token::LiteralType};
 
-fn parenthesize(name: &str, exprs: Vec<Box<Expr>>) -> String {
+fn parenthesize(name: &str, exprs: Vec<&Box<Expr>>) -> String {
     let mut builder = String::new();
     builder = format!("{}({}", builder, name);
     for expr in exprs {
         builder = format!("{} ", builder);
-        builder = format!("{}{}", builder, print_ast(*expr));
+        builder = format!("{}{}", builder, print_ast(&expr));
     }
 
     builder = format!("{})", builder);
     builder.to_string()
 }
 
-pub fn print_ast(expr: Expr) -> String {
+pub fn print_ast(expr: &Expr) -> String {
     match expr {
         Expr::Binary {
             left,
@@ -23,7 +23,7 @@ pub fn print_ast(expr: Expr) -> String {
             return parenthesize(&"group", Vec::from([expression]));
         }
         Expr::Literal { value } => {
-            if value == LiteralType::None {
+            if value.clone() == LiteralType::None {
                 return "nil".to_string();
             } 
             value.to_string()
