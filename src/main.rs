@@ -4,15 +4,14 @@ use std::io;
 use std::io::Write;
 use std::process;
 
-use crate::executer::execute;
+use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
 use crate::stmt::Stmt;
 use crate::token::Token;
-mod ast_printer;
+// mod ast_printer;
 mod error;
 mod error_type;
-mod executer;
 mod expr;
 mod interpreter;
 mod parser;
@@ -20,6 +19,7 @@ mod scanner;
 mod stmt;
 mod token;
 mod token_type;
+mod environment;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -66,13 +66,19 @@ fn run_prompt() {
 
 fn run(source: &str) -> Result<(), error_type::LoxError> {
     let mut scanner = Scanner::new(source.to_string());
-
+    
     let tokens: Vec<Token> = scanner.scan_tokens();
+
+    // for token in &tokens {
+    //     println!("{}", token)
+    // }
+
     let mut parser = Parser::new(tokens);
     let statements: Vec<Stmt> = parser.parse()?;
-
+    
+    let mut interpreter = Interpreter::new();
     for statement in statements {
-        execute(statement)?;
+        interpreter.execute(statement)?;
     }
 
     Ok(())

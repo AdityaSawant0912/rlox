@@ -4,6 +4,9 @@ use crate::{
 };
 
 pub enum Stmt {
+    Block {
+        statements : Vec<Box<Stmt>>,
+    },
     Expression {
         expression : Expr,
     },

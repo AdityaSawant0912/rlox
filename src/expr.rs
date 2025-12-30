@@ -3,6 +3,10 @@ use crate::{
 };
 
 pub enum Expr {
+    Assign {
+        name : Token,
+        value : Box<Expr>,
+    },
     Binary {
         left : Box<Expr>,
         operator : Token,

@@ -31,5 +31,9 @@ pub fn print_ast(expr: &Expr) -> String {
         Expr::Unary { operator, right } => {
             return parenthesize(&operator.lexeme, Vec::from([right]));
         }
+        Expr::Variable { name } => {
+            return name.lexeme.to_string();
+        }
+
     }
 }

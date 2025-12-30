@@ -1,5 +1,5 @@
 use crate::{
-    error,
+    error::{self, error},
     error_type::LoxError,
     expr::Expr,
     stmt::Stmt,
@@ -10,6 +10,7 @@ use crate::{
 pub struct Parser {
     pub tokens: Vec<Token>,
     current: usize,
+    pub had_error: bool,
 }
 
 impl Default for Parser {
@@ -17,6 +18,7 @@ impl Default for Parser {
         Self {
             tokens: Vec::new(),
             current: 0,
+            had_error: false,
         }
     }
 }
@@ -26,6 +28,7 @@ impl Parser {
         Self {
             tokens: token,
             current: 0,
+            had_error: false,
         }
     }
 
@@ -65,7 +68,8 @@ impl Parser {
         return false;
     }
 
-    fn error(&self, token: Token, message: &str) -> LoxError {
+    fn error(&mut self, token: Token, message: &str) -> LoxError {
+        self.had_error = true;
         error::token_error(token, message);
         return LoxError::ParseError;
     }
@@ -74,7 +78,7 @@ impl Parser {
         if self.check(_type) {
             return Ok(self.advance());
         }
-        Err(self.error(self.peek().clone(), message))
+        return Err(self.error(self.peek().clone(), message));
     }
 
     fn synchronize(&mut self) {
@@ -121,7 +125,9 @@ impl Parser {
             });
         }
         if self._match(Vec::from([TokenType::Var])) {
-            return Ok(Expr::Variable { name: self.previous() });
+            return Ok(Expr::Variable {
+                name: self.previous(),
+            });
         }
         if self._match(Vec::from([TokenType::LeftParen])) {
             match self.expression() {
@@ -137,8 +143,12 @@ impl Parser {
                 Err(e) => return Err(e),
             }
         }
-
-        Err(self.error(self.peek().clone(), "Expected expression."))
+        if self._match(Vec::from([TokenType::Identifier])) {
+            return Ok(Expr::Variable {
+                name: self.previous(),
+            });
+        }
+        return Err(self.error(self.peek().clone(), "Expected expression."));
     }
 
     fn unary(&mut self) -> Result<Expr, LoxError> {
@@ -173,7 +183,7 @@ impl Parser {
                         Err(e) => return Err(e),
                     }
                 }
-                Ok(expr)
+                return Ok(expr);
             }
             Err(e) => return Err(e),
         }
@@ -195,7 +205,7 @@ impl Parser {
                         Err(e) => return Err(e),
                     }
                 }
-                Ok(expr)
+                return Ok(expr);
             }
             Err(e) => return Err(e),
         }
@@ -222,7 +232,7 @@ impl Parser {
                         Err(e) => return Err(e),
                     }
                 }
-                Ok(expr)
+                return Ok(expr);
             }
             Err(e) => return Err(e),
         }
@@ -244,14 +254,30 @@ impl Parser {
                         Err(e) => return Err(e),
                     }
                 }
-                Ok(expr)
+                return Ok(expr);
             }
             Err(e) => return Err(e),
         }
     }
 
+    fn assignment(&mut self) -> Result<Expr, LoxError> {
+        let expr: Expr = self.equality()?;
+        if self._match(Vec::from([TokenType::Equal])) {
+            let equals: Token = self.previous();
+            let value: Expr = self.assignment()?;
+            if let Expr::Variable { name } = expr {
+                return Ok(Expr::Assign {
+                    name,
+                    value: Box::new(value),
+                });
+            }
+            return Err(self.error(equals, "Invalid assignment target."));
+        }
+        return Ok(expr);
+    }
+
     fn expression(&mut self) -> Result<Expr, LoxError> {
-        self.equality()
+        self.assignment()
     }
 
     fn print_statement(&mut self) -> Result<Stmt, LoxError> {
@@ -273,21 +299,42 @@ impl Parser {
         }
     }
 
+    fn block(&mut self) -> Result<Vec<Box<Stmt>>, LoxError> {
+        let mut statements: Vec<Box<Stmt>> = Vec::new();
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            if let Some(stmt) = self.declaration() {
+                statements.push(Box::new(stmt));
+            }
+        }
+        self.consume(TokenType::RightBrace, "Expected '}' after block")?;
+        return Ok(statements);
+    }
+
     fn statement(&mut self) -> Result<Stmt, LoxError> {
         if self._match(Vec::from([TokenType::Print])) {
             return self.print_statement();
+        }
+        if self._match(Vec::from([TokenType::LeftBrace])) {
+            return Ok(Stmt::Block {
+                statements: self.block()?,
+            });
         }
         return self.expression_statement();
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, LoxError> {
         let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
-        let mut initializer: Expr = Expr::Literal { value: LiteralType::None };
+        let mut initializer: Expr = Expr::Literal {
+            value: LiteralType::None,
+        };
         if self._match(Vec::from([TokenType::Equal])) {
             initializer = self.expression()?;
         }
-        self.consume(TokenType::Semicolon, "Expected ';' after variable declaration")?;
-        return Ok( Stmt::Var { name, initializer })
+        self.consume(
+            TokenType::Semicolon,
+            "Expected ';' after variable declaration",
+        )?;
+        return Ok(Stmt::Var { name, initializer });
     }
 
     fn declaration(&mut self) -> Option<Stmt> {
@@ -314,9 +361,11 @@ impl Parser {
         while !self.is_at_end() {
             match self.declaration() {
                 Some(stmt) => statements.push(stmt),
-                None => continue
+                None => continue,
             }
-            
+        }
+        if self.had_error {
+            return Err(LoxError::ParseError);
         }
         return Ok(statements);
     }

@@ -45,6 +45,7 @@ fn main() -> std::io::Result<()> {
         output_path,
         "Expr",
         Vec::from([
+            "Assign   : name Token, value Box<Expr>",
             "Binary   : left Box<Expr>, operator Token, right Box<Expr>",
             "Grouping : expression Box<Expr>",
             "Literal  : value LiteralType",
@@ -56,6 +57,7 @@ fn main() -> std::io::Result<()> {
         output_path,
         "Stmt",
         Vec::from([
+            "Block      : statements Vec<Box<Stmt>>",
             "Expression : expression Expr",
             "Print      : expression Expr",
             "Var        : name Token, initializer Expr"
