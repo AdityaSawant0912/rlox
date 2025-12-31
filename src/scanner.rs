@@ -84,7 +84,7 @@ impl Scanner {
         return self.source.chars().nth(self.current + 1).unwrap();
     }
 
-    fn r#match(&mut self, expected: char) -> bool {
+    fn _match(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
         }
@@ -92,7 +92,7 @@ impl Scanner {
             return false;
         }
         self.current += 1;
-        return false;
+        return true;
     }
 
     // fn add_token(&mut self, _type: TokenType) { // Rust doesn't support function overloading.
@@ -177,35 +177,35 @@ impl Scanner {
             '*' => self.add_token(TokenType::Star, LiteralType::None),
 
             '!' => {
-                if self.r#match('=') {
+                if self._match('=') {
                     self.add_token(TokenType::BangEqual, LiteralType::None)
                 } else {
                     self.add_token(TokenType::Bang, LiteralType::None)
                 }
             }
             '=' => {
-                if self.r#match('=') {
+                if self._match('=') {
                     self.add_token(TokenType::EqualEqual, LiteralType::None)
                 } else {
                     self.add_token(TokenType::Equal, LiteralType::None)
                 }
             }
             '<' => {
-                if self.r#match('=') {
+                if self._match('=') {
                     self.add_token(TokenType::LessEqual, LiteralType::None)
                 } else {
                     self.add_token(TokenType::Less, LiteralType::None)
                 }
             }
             '>' => {
-                if self.r#match('=') {
+                if self._match('=') {
                     self.add_token(TokenType::GreaterEqual, LiteralType::None)
                 } else {
                     self.add_token(TokenType::Greater, LiteralType::None)
                 }
             }
             '/' => {
-                if self.r#match('/') {
+                if self._match('/') {
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }

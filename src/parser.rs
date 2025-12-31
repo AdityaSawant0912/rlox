@@ -1,5 +1,5 @@
 use crate::{
-    error::{self, error},
+    error::{self},
     error_type::LoxError,
     expr::Expr,
     stmt::Stmt,
@@ -260,8 +260,36 @@ impl Parser {
         }
     }
 
-    fn assignment(&mut self) -> Result<Expr, LoxError> {
+    fn and(&mut self) -> Result<Expr, LoxError> {
         let expr: Expr = self.equality()?;
+        if self._match(Vec::from([TokenType::And])) {
+            let operator: Token = self.previous();
+            let right: Expr = self.equality()?;
+            return Ok(Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            });
+        }
+        return Ok(expr);
+    }
+
+    fn or(&mut self) -> Result<Expr, LoxError> {
+        let expr: Expr = self.and()?;
+        if self._match(Vec::from([TokenType::Or])) {
+            let operator: Token = self.previous();
+            let right: Expr = self.and()?;
+            return Ok(Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            });
+        }
+        return Ok(expr);
+    }
+
+    fn assignment(&mut self) -> Result<Expr, LoxError> {
+        let expr: Expr = self.or()?;
         if self._match(Vec::from([TokenType::Equal])) {
             let equals: Token = self.previous();
             let value: Expr = self.assignment()?;
@@ -280,6 +308,22 @@ impl Parser {
         self.assignment()
     }
 
+    fn if_statement(&mut self) -> Result<Stmt, LoxError> {
+        self.consume(TokenType::LeftParen, "Expected '(' after 'if'.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expected ')' after if condition.")?;
+        let then_branch = self.statement()?;
+        let mut else_branch: Option<Box<Stmt>> = None;
+        if self._match(Vec::from([TokenType::Else])) {
+            else_branch = Some(Box::new(self.statement()?));
+        }
+        return Ok(Stmt::If {
+            condition,
+            then_branch: Box::new(then_branch),
+            else_branch,
+        });
+    }
+
     fn print_statement(&mut self) -> Result<Stmt, LoxError> {
         match self.expression() {
             Ok(expr) => match self.consume(TokenType::Semicolon, "Expect ';' after value.") {
@@ -289,6 +333,18 @@ impl Parser {
             Err(e) => return Err(e),
         }
     }
+
+    fn while_statement(&mut self) -> Result<Stmt, LoxError> {
+        self.consume(TokenType::LeftParen, "Expected '(' after 'if'.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expected ')' after if condition.")?;
+        let body = self.statement()?;
+        return Ok(Stmt::While {
+            condition,
+            body: Box::new(body),
+        });
+    }
+
     fn expression_statement(&mut self) -> Result<Stmt, LoxError> {
         match self.expression() {
             Ok(expr) => match self.consume(TokenType::Semicolon, "Expect ';' after expression.") {
@@ -311,8 +367,14 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, LoxError> {
+        if self._match(Vec::from([TokenType::If])) {
+            return self.if_statement();
+        }
         if self._match(Vec::from([TokenType::Print])) {
             return self.print_statement();
+        }
+        if self._match(Vec::from([TokenType::While])) {
+            return self.while_statement();
         }
         if self._match(Vec::from([TokenType::LeftBrace])) {
             return Ok(Stmt::Block {
@@ -341,7 +403,7 @@ impl Parser {
         if self._match(Vec::from([TokenType::Var])) {
             match self.var_declaration() {
                 Ok(stmt) => return Some(stmt),
-                Err(e) => {
+                Err(_e) => {
                     self.synchronize();
                     return None;
                 }
@@ -349,7 +411,7 @@ impl Parser {
         }
         match self.statement() {
             Ok(stmt) => return Some(stmt),
-            Err(e) => {
+            Err(_e) => {
                 self.synchronize();
                 return None;
             }

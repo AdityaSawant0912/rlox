@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::{
     error,
@@ -8,7 +10,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Environment {
     values: HashMap<String, LiteralType>,
-    enclosing: Option<Box<Environment>>,
+    enclosing: Option<Rc<RefCell<Environment>>>,
 }
 
 // impl Default for Environment {
@@ -20,10 +22,10 @@ pub struct Environment {
 // }
 
 impl Environment {
-    pub fn new(enclosing: Option<Environment>) -> Self {
+    pub fn new(enclosing: Option<Rc<RefCell<Environment>>>) -> Self {
         Self {
             values: HashMap::new(),
-            enclosing: enclosing.map(Box::new), // Converts Option<Environment> to Option<Box<Environment>>
+            enclosing,
         }
     }
 
@@ -35,8 +37,8 @@ impl Environment {
         if let Some(literal) = self.values.get(&name.lexeme) {
             return Ok(literal.clone());
         }
-        if let Some(env) = &mut self.enclosing {
-            return env.get(&name);
+        if let Some(env) = &self.enclosing {
+            return env.borrow_mut().get(name);
         }
         error::token_error(
             name.clone(),
@@ -51,7 +53,7 @@ impl Environment {
             return Ok(());
         }
         if let Some(env) = &mut self.enclosing {
-            return env.assign(name, value)
+            return env.borrow_mut().assign(name, value);
         }
         error::token_error(
             name.clone(),
@@ -60,9 +62,14 @@ impl Environment {
         Err(LoxError::RuntimeError)
     }
 
-    pub fn dump(&self) {
+    pub fn dump(&self, depth: Option<usize>) {
+        let d = depth.unwrap_or(0);
+        println!("Env depth = {}", d);
         for (key, value) in &self.values {
             println!("{}: {}", key, value);
+        }
+        if let Some(env) = &self.enclosing {
+            env.borrow_mut().dump(Some(d + 1));
         }
     }
 }
