@@ -3,12 +3,18 @@ use crate::{
     token::Token
 };
 
-#[derive(Debug, Clone)]pub enum Stmt {
+#[derive(Clone, PartialEq)]
+pub enum Stmt {
     Block {
         statements : Vec<Box<Stmt>>,
     },
     Expression {
         expression : Expr,
+    },
+    Function {
+        name : Token,
+        params : Vec<Token>,
+        body : Vec<Box<Stmt>>,
     },
     If {
         condition : Expr,

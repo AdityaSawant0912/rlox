@@ -20,6 +20,9 @@ mod stmt;
 mod token;
 mod token_type;
 mod environment;
+mod lox_callable;
+mod native_functions;
+mod lox_function;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

@@ -47,6 +47,7 @@ fn main() -> std::io::Result<()> {
         Vec::from([
             "Assign   : name Token, value Box<Expr>",
             "Binary   : left Box<Expr>, operator Token, right Box<Expr>",
+            "Call     : callee Box<Expr>, paren Token, arguments Vec<Box<Expr>>",
             "Grouping : expression Box<Expr>",
             "Literal  : value LiteralType",
             "Logical  : left Box<Expr>, operator Token, right Box<Expr>",
@@ -60,6 +61,7 @@ fn main() -> std::io::Result<()> {
         Vec::from([
             "Block      : statements Vec<Box<Stmt>>",
             "Expression : expression Expr",
+            "Function   : name Token, params Vec<Token>, body Vec<Box<Stmt>>",
             "If : condition Expr, then_branch Box<Stmt>, else_branch Option<Box<Stmt>>",
             "Print      : expression Expr",
             "While      : condition Expr, body Box<Stmt>",

@@ -2,7 +2,8 @@ use crate::{
     token::{LiteralType, Token}
 };
 
-#[derive(Debug, Clone)]pub enum Expr {
+#[derive(Clone, PartialEq)]
+pub enum Expr {
     Assign {
         name : Token,
         value : Box<Expr>,
@@ -11,6 +12,11 @@ use crate::{
         left : Box<Expr>,
         operator : Token,
         right : Box<Expr>,
+    },
+    Call {
+        callee : Box<Expr>,
+        paren : Token,
+        arguments : Vec<Box<Expr>>,
     },
     Grouping {
         expression : Box<Expr>,

@@ -1,5 +1,5 @@
 use crate::{
-    error::{self},
+    error::{self, error},
     error_type::LoxError,
     expr::Expr,
     stmt::Stmt,
@@ -151,6 +151,34 @@ impl Parser {
         return Err(self.error(self.peek().clone(), "Expected expression."));
     }
 
+    fn finish_call(&mut self, callee: &Expr) -> Result<Expr, LoxError> {
+        let mut arguments: Vec<Box<Expr>> = Vec::new();
+        if !self.check(TokenType::RightParen) {
+            arguments.push(Box::new(self.expression()?));
+            while self._match(Vec::from([TokenType::Comma])) {
+                if arguments.len() >= 225 {
+                    return Err(self.error(self.peek().clone(), "Can't have more than 255 arguments"));
+                }
+                arguments.push(Box::new(self.expression()?));
+            }
+        }
+        let paren: Token = self.consume(TokenType::RightParen, "Expected ')' after arguments.")?;
+
+        return Ok(Expr::Call { callee: Box::new(callee.clone()), paren, arguments })
+    }
+
+    fn call(&mut self) -> Result<Expr, LoxError> {
+        let mut expr = self.primary()?;
+        loop {
+            if self._match(Vec::from([TokenType::LeftParen])) {
+                expr = self.finish_call(&expr)?;
+            } else {
+                break;
+            }
+        }
+        return Ok(expr)
+    }
+
     fn unary(&mut self) -> Result<Expr, LoxError> {
         if self._match(Vec::from([TokenType::Bang, TokenType::Minus])) {
             let operator = self.previous();
@@ -164,7 +192,7 @@ impl Parser {
                 Err(e) => return Err(e),
             }
         }
-        self.primary()
+        self.call()
     }
 
     fn factor(&mut self) -> Result<Expr, LoxError> {
@@ -308,6 +336,59 @@ impl Parser {
         self.assignment()
     }
 
+    fn for_statement(&mut self) -> Result<Stmt, LoxError> {
+        self.consume(TokenType::LeftParen, "Expected '(' after 'for'.")?;
+        let initializer: Stmt;
+        if self._match(Vec::from([TokenType::Semicolon])) {
+            initializer = Stmt::Expression { expression: Expr::Literal { value: LiteralType::None } }
+        } else if self._match(Vec::from([TokenType::Var])) {
+            initializer = self.var_declaration()?;
+        } else {
+            initializer = self.expression_statement()?;
+        }
+        let mut condition:Expr;
+        if !self.check(TokenType::Semicolon) {
+            condition = self.expression()?;
+        } else {
+            condition = Expr::Literal { value: LiteralType::None };
+        }
+        
+        self.consume(TokenType::Semicolon, "Expected ';' after loop condition.")?;
+
+        let increment:Expr;
+        if !self.check(TokenType::RightParen) {
+            increment = self.expression()?;
+        } else {
+            increment = Expr::Literal { value: LiteralType::None };
+        }
+
+        self.consume(TokenType::RightParen, "Expected ')' after for clauses.")?;
+
+        let mut body = self.statement()?;
+
+        if increment != (Expr::Literal { value: LiteralType::None }){
+            body = Stmt::Block { statements: Vec::from([
+                Box::new(body),
+                Box::new(Stmt::Expression { expression: increment })
+            ]) }
+        }
+
+        if condition == (Expr::Literal { value: LiteralType::None }) {
+            condition = Expr::Literal { value: LiteralType::Boolean(true) }
+        }
+
+        body = Stmt::While { condition, body: Box::new(body) };
+
+        if initializer != (Stmt::Expression { expression: Expr::Literal { value: LiteralType::None } }) {
+            body = Stmt::Block { statements: Vec::from([
+                Box::new(initializer),
+                Box::new(body)
+            ]) }
+        }
+
+        return Ok(body)
+    }
+
     fn if_statement(&mut self) -> Result<Stmt, LoxError> {
         self.consume(TokenType::LeftParen, "Expected '(' after 'if'.")?;
         let condition = self.expression()?;
@@ -367,6 +448,9 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, LoxError> {
+        if self._match(Vec::from([TokenType::For])) {
+            return self.for_statement();
+        }
         if self._match(Vec::from([TokenType::If])) {
             return self.if_statement();
         }
@@ -382,6 +466,37 @@ impl Parser {
             });
         }
         return self.expression_statement();
+    }
+    fn function(&mut self, kind: &str) -> Result<Stmt, LoxError> {
+        let name = self.consume(TokenType::Identifier, &format!("Expect {} name.", kind))?;
+        self.consume(
+            TokenType::LeftParen,
+            &format!("Expect '(' after {} name.", kind),
+        )?;
+        let mut parameters: Vec<Token> = Vec::new();
+        if !self.check(TokenType::RightParen) {
+            loop {
+                if parameters.len() >= 225 {
+                    self.error(self.peek().clone(), "Can't have more than 255 parameters.");
+                }
+                parameters.push(self.consume(TokenType::Identifier, "Expected parameter name.")?);
+
+                if !self._match(Vec::from([TokenType::Comma])) {
+                    break;
+                } 
+            }
+        }
+        self.consume(
+            TokenType::RightParen,
+            &format!("Expect ')' after {} name.", kind),
+        )?;
+
+        self.consume(
+            TokenType::LeftBrace,
+            &format!("Expect '{{' before {} body.", kind),
+        )?;
+        let body = self.block()?;
+        return Ok(Stmt::Function { name, params: parameters, body })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, LoxError> {
@@ -400,6 +515,15 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Option<Stmt> {
+        if self._match(Vec::from([TokenType::Fun])) {
+            match self.function("function") {
+                Ok(stmt) => return Some(stmt),
+                Err(_e) => {
+                    self.synchronize();
+                    return None;
+                }
+            }
+        }
         if self._match(Vec::from([TokenType::Var])) {
             match self.var_declaration() {
                 Ok(stmt) => return Some(stmt),

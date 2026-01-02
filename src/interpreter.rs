@@ -1,23 +1,25 @@
 use crate::{
-    environment::{self, Environment},
-    error::token_error,
-    error_type::LoxError,
-    expr::Expr,
-    stmt::Stmt,
-    token::{LiteralType, Token, literal_stringify},
-    token_type::TokenType,
+    environment::Environment, error::token_error, error_type::LoxError, expr::Expr, lox_function::LoxFunction, native_functions::ClockNative, stmt::Stmt, token::{LiteralType, Token, literal_stringify}, token_type::TokenType
 };
 use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct Interpreter {
     pub environment: Rc<RefCell<Environment>>,
+    pub globals: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
+        let globals = Rc::new(RefCell::new(Environment::new(None)));
+
+        globals
+            .borrow_mut()
+            .define("clock", &LiteralType::Callable(Rc::new(ClockNative)));
+
         Self {
-            environment: Rc::new(RefCell::new(Environment::new(None))),
+            environment: Rc::clone(&globals),
+            globals,
         }
     }
 
@@ -226,6 +228,37 @@ impl Interpreter {
                     }
                 }
             }
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => {
+                let evaluated_callee: LiteralType = self.interpret(*callee)?;
+                let mut evaluated_arguments: Vec<LiteralType> = Vec::new();
+                for arg in arguments {
+                    evaluated_arguments.push(self.interpret(*arg)?);
+                }
+                match evaluated_callee {
+                    LiteralType::Callable(function) => {
+                        if evaluated_arguments.len() != function.arity() {
+                            token_error(
+                                paren,
+                                &format!(
+                                    "Expected {} arguments but got {}.",
+                                    function.arity(),
+                                    evaluated_arguments.len()
+                                ),
+                            );
+                            return Err(LoxError::RuntimeError);
+                        }
+                        return Ok(function.call(self, evaluated_arguments)?);
+                    }
+                    _ => {
+                        token_error(paren, "Can only call functions and classes.");
+                        return Err(LoxError::RuntimeError);
+                    }
+                }
+            }
             Expr::Grouping { expression } => self.evaluate(*expression),
             Expr::Literal { value } => return Ok(value),
             Expr::Logical {
@@ -267,13 +300,9 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(&mut self, statements: Vec<Box<Stmt>>) -> Result<(), LoxError> {
-        let new_env = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
-            &self.environment,
-        )))));
-
+    pub fn execute_block(&mut self, statements: Vec<Box<Stmt>>, environment:Rc<RefCell<Environment>>) -> Result<(), LoxError> {
         // Swap it in, keeping the previous
-        let previous = std::mem::replace(&mut self.environment, new_env);
+        let previous = std::mem::replace(&mut self.environment, environment);
 
         let result = (|| {
             for statement in statements {
@@ -289,11 +318,19 @@ impl Interpreter {
     pub fn execute(&mut self, stmt: Stmt) -> Result<(), LoxError> {
         match stmt {
             Stmt::Block { statements } => {
-                return self.execute_block(statements);
+                let environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
+                    &self.environment,
+                )))));
+                return self.execute_block(statements, environment);
             }
             Stmt::Expression { expression } => {
                 self.interpret(expression)?;
                 return Ok(());
+            }
+            Stmt::Function { name, params, body } => {
+                let function = LoxFunction::new(Stmt::Function { name:name.clone(), params, body });
+                self.environment.borrow_mut().define(&name.lexeme, &LiteralType::Callable(Rc::new(function)));
+                return Ok(())
             }
             Stmt::If {
                 condition,

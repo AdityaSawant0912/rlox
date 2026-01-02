@@ -1,0 +1,56 @@
+use std::{cell::RefCell, rc::Rc};
+
+use crate::{environment::Environment, error_type::LoxError, interpreter::Interpreter, lox_callable::LoxCallable, stmt::Stmt, token::{self, LiteralType}};
+
+
+pub struct LoxFunction {
+    pub declaration: Stmt
+}
+
+impl LoxFunction {
+    pub fn new(declaration:Stmt) -> Self {
+        Self {
+            declaration
+        }
+    }
+}
+
+impl LoxCallable for LoxFunction {
+    fn call(&self, interpreter: &mut Interpreter, arguments:Vec<LiteralType>) -> Result<LiteralType, LoxError> {
+        let environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
+            &interpreter.globals,
+        )))));
+
+        match &self.declaration {
+            Stmt::Function { name, params, body } => {
+                for (index, param) in params.iter().enumerate() {
+                    environment.borrow_mut().define(&param.lexeme, arguments.get(index).unwrap());
+                }
+                interpreter.execute_block(body.clone(), environment);
+                return Ok(LiteralType::None)
+            },
+            _ => return Ok(LiteralType::None)
+        }
+    }
+
+    fn arity(&self) -> usize {
+        match &self.declaration {
+            Stmt::Function { name, params, body } => {
+                return params.len()
+            },
+            _ => return 0
+        }
+    }
+}
+
+impl std::fmt::Display for LoxFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self.declaration {
+            Stmt::Function { name, params, body } => {
+                return write!(f, "<fn {}>", name.lexeme)
+            },
+            _ => return write!(f, "<fn unknown>")
+        }
+        
+    }
+}

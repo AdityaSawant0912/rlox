@@ -1,12 +1,38 @@
-use std::{fmt::{Debug, Display}};
-use crate::token_type;
+use std::{fmt::{Debug, Display}, rc::Rc};
+use crate::{lox_callable::LoxCallable, token_type};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive()]
 pub enum LiteralType {
     Number(f64),
     String(String),
     Boolean(bool),
     None,
+    Callable(Rc<dyn LoxCallable>)
+}
+
+impl Clone for LiteralType {
+    fn clone(&self) -> Self {
+        match self {
+            Self::None => Self::None,
+            Self::Number(n) => Self::Number(*n),
+            Self::String(s) => Self::String(s.clone()),
+            Self::Boolean(b) => Self::Boolean(*b),
+            Self::Callable(c) => Self::Callable(Rc::clone(c)), // Cheap clone!
+        }
+    }
+}
+
+impl PartialEq for LiteralType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::None, Self::None) => true,
+            (Self::Number(a), Self::Number(b)) => a == b,
+            (Self::String(a), Self::String(b)) => a == b,
+            (Self::Boolean(a), Self::Boolean(b)) => a == b,
+            (Self::Callable(_), Self::Callable(_)) => false, // Functions not comparable
+            _ => false,
+        }
+    }
 }
 
 impl Display for LiteralType {
@@ -15,12 +41,13 @@ impl Display for LiteralType {
             LiteralType::Number(n) => write!(f, "{}", n),
             LiteralType::String(s) => write!(f, "{}", s),
             LiteralType::Boolean(b) => write!(f, "{}", b),
-            LiteralType::None => write!(f, "None")
+            LiteralType::None => write!(f, "None"),
+            LiteralType::Callable(_c) => write!(f, "<fn>"),
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Token{
     pub _type: token_type::TokenType,
     pub lexeme: String,
@@ -28,18 +55,19 @@ pub struct Token{
     pub line: usize,
 }
 
-impl Display for Token {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
-    }
-}
+// impl Display for Token {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         Debug::fmt(self, f)
+//     }
+// }
 
 pub fn literal_stringify(value: LiteralType) -> String {
     match value {
         LiteralType::None => return "nil".to_string(),
         LiteralType::String(s) => return s,
         LiteralType:: Boolean(b) => return format!("{b}"),
-        LiteralType:: Number(n) => return format!("{n}")
+        LiteralType:: Number(n) => return format!("{n}"),
+        LiteralType:: Callable(_c) => return format!("<fn>"),
     }
 }
 

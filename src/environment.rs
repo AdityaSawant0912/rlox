@@ -7,7 +7,7 @@ use crate::{
     error_type::LoxError,
     token::{LiteralType, Token},
 };
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Environment {
     values: HashMap<String, LiteralType>,
     enclosing: Option<Rc<RefCell<Environment>>>,
