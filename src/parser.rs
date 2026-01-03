@@ -415,6 +415,19 @@ impl Parser {
         }
     }
 
+    fn return_statement(&mut self) -> Result<Stmt, LoxError> {
+        let keyword = self.previous();
+        let value: Expr;
+        if !self.check(TokenType::Semicolon) {
+            value = self.expression()?;
+        } else {
+            value = Expr::Literal { value: LiteralType::None };
+        }
+
+        self.consume(TokenType::Semicolon, "Expected ';' after return value.")?;
+        return Ok(Stmt::Return { keyword, value })
+    }
+
     fn while_statement(&mut self) -> Result<Stmt, LoxError> {
         self.consume(TokenType::LeftParen, "Expected '(' after 'if'.")?;
         let condition = self.expression()?;
@@ -456,6 +469,9 @@ impl Parser {
         }
         if self._match(Vec::from([TokenType::Print])) {
             return self.print_statement();
+        }
+        if self._match(Vec::from([TokenType::Return])) {
+            return self.return_statement();
         }
         if self._match(Vec::from([TokenType::While])) {
             return self.while_statement();

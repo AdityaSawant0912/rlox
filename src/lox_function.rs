@@ -26,8 +26,15 @@ impl LoxCallable for LoxFunction {
                 for (index, param) in params.iter().enumerate() {
                     environment.borrow_mut().define(&param.lexeme, arguments.get(index).unwrap());
                 }
-                interpreter.execute_block(body.clone(), environment);
-                return Ok(LiteralType::None)
+                match interpreter.execute_block(body.clone(), environment) {
+                    Ok(()) => return Ok(LiteralType::None),
+                    Err(e) => {
+                        match e {
+                            LoxError::Return(value) => return Ok(value),
+                            _ => return Ok(LiteralType::None)
+                        }
+                    }
+                }
             },
             _ => return Ok(LiteralType::None)
         }

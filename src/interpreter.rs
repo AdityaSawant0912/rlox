@@ -355,6 +355,15 @@ impl Interpreter {
                     return Err(e);
                 }
             },
+            Stmt::Return { keyword, value } => {
+                let evaluated_value: LiteralType;
+                if value != (Expr::Literal { value: LiteralType::None }) {
+                    evaluated_value = self.interpret(value)?;
+                } else {
+                    evaluated_value = LiteralType::None;
+                }
+                Err(LoxError::Return(evaluated_value))
+            },
             Stmt::While { condition, body } => {
                 let mut evaluated_condition = self.interpret(condition.clone())?;
                 evaluated_condition = self.interpret(condition.clone())?;
