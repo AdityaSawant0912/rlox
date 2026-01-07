@@ -1,5 +1,13 @@
 use crate::{
-    environment::Environment, error::token_error, error_type::LoxError, expr::Expr, lox_function::LoxFunction, native_functions::ClockNative, stmt::Stmt, token::{LiteralType, Token, literal_stringify}, token_type::TokenType
+    environment::Environment,
+    error::token_error,
+    error_type::LoxError,
+    expr::Expr,
+    lox_function::LoxFunction,
+    native_functions::ClockNative,
+    stmt::Stmt,
+    token::{LiteralType, Token, literal_stringify},
+    token_type::TokenType,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -300,7 +308,11 @@ impl Interpreter {
         }
     }
 
-    pub fn execute_block(&mut self, statements: Vec<Box<Stmt>>, environment:Rc<RefCell<Environment>>) -> Result<(), LoxError> {
+    pub fn execute_block(
+        &mut self,
+        statements: Vec<Box<Stmt>>,
+        environment: Rc<RefCell<Environment>>,
+    ) -> Result<(), LoxError> {
         // Swap it in, keeping the previous
         let previous = std::mem::replace(&mut self.environment, environment);
 
@@ -328,9 +340,18 @@ impl Interpreter {
                 return Ok(());
             }
             Stmt::Function { name, params, body } => {
-                let function = LoxFunction::new(Stmt::Function { name:name.clone(), params, body });
-                self.environment.borrow_mut().define(&name.lexeme, &LiteralType::Callable(Rc::new(function)));
-                return Ok(())
+                let function = LoxFunction::new(
+                    Stmt::Function {
+                        name: name.clone(),
+                        params,
+                        body,
+                    },
+                    Rc::clone(&self.environment),
+                );
+                self.environment
+                    .borrow_mut()
+                    .define(&name.lexeme, &LiteralType::Callable(Rc::new(function)));
+                return Ok(());
             }
             Stmt::If {
                 condition,
@@ -357,13 +378,17 @@ impl Interpreter {
             },
             Stmt::Return { keyword, value } => {
                 let evaluated_value: LiteralType;
-                if value != (Expr::Literal { value: LiteralType::None }) {
+                if value
+                    != (Expr::Literal {
+                        value: LiteralType::None,
+                    })
+                {
                     evaluated_value = self.interpret(value)?;
                 } else {
                     evaluated_value = LiteralType::None;
                 }
                 Err(LoxError::Return(evaluated_value))
-            },
+            }
             Stmt::While { condition, body } => {
                 let mut evaluated_condition = self.interpret(condition.clone())?;
                 evaluated_condition = self.interpret(condition.clone())?;

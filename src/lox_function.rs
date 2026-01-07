@@ -4,13 +4,15 @@ use crate::{environment::Environment, error_type::LoxError, interpreter::Interpr
 
 
 pub struct LoxFunction {
-    pub declaration: Stmt
+    pub declaration: Stmt,
+    pub closure: Rc<RefCell<Environment>>
 }
 
 impl LoxFunction {
-    pub fn new(declaration:Stmt) -> Self {
+    pub fn new(declaration:Stmt, closure: Rc<RefCell<Environment>>) -> Self {
         Self {
-            declaration
+            declaration,
+            closure
         }
     }
 }
@@ -18,7 +20,7 @@ impl LoxFunction {
 impl LoxCallable for LoxFunction {
     fn call(&self, interpreter: &mut Interpreter, arguments:Vec<LiteralType>) -> Result<LiteralType, LoxError> {
         let environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
-            &interpreter.globals,
+            &self.closure,
         )))));
 
         match &self.declaration {
