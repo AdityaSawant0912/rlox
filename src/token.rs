@@ -1,4 +1,4 @@
-use std::{fmt::{Debug, Display}, rc::Rc};
+use std::{fmt::Display, rc::Rc};
 use crate::{lox_callable::LoxCallable, token_type};
 
 #[derive()]

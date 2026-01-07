@@ -376,7 +376,7 @@ impl Interpreter {
                     return Err(e);
                 }
             },
-            Stmt::Return { keyword, value } => {
+            Stmt::Return { keyword: _, value } => {
                 let evaluated_value: LiteralType;
                 if value
                     != (Expr::Literal {
@@ -391,7 +391,6 @@ impl Interpreter {
             }
             Stmt::While { condition, body } => {
                 let mut evaluated_condition = self.interpret(condition.clone())?;
-                evaluated_condition = self.interpret(condition.clone())?;
                 while let LiteralType::Boolean(true) = self.is_truthy(&evaluated_condition) {
                     self.execute(*body.clone())?;
                     evaluated_condition = self.interpret(condition.clone())?;

@@ -1,4 +1,4 @@
-use crate::{error_type::LoxError, interpreter::{self, Interpreter}, token::LiteralType};
+use crate::{error_type::LoxError, interpreter::Interpreter, token::LiteralType};
 
 
 pub trait LoxCallable {

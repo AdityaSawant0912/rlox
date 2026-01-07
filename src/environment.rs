@@ -62,14 +62,14 @@ impl Environment {
         Err(LoxError::RuntimeError)
     }
 
-    pub fn dump(&self, depth: Option<usize>) {
+    pub fn _dump(&self, depth: Option<usize>) {
         let d = depth.unwrap_or(0);
         println!("Env depth = {}", d);
         for (key, value) in &self.values {
             println!("{}: {}", key, value);
         }
         if let Some(env) = &self.enclosing {
-            env.borrow_mut().dump(Some(d + 1));
+            env.borrow_mut()._dump(Some(d + 1));
         }
     }
 }
