@@ -3,7 +3,7 @@ use crate::{
     token::Token
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Stmt {
     Block {
         statements : Vec<Box<Stmt>>,

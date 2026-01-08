@@ -2,7 +2,7 @@ use crate::{
     token::{LiteralType, Token}
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
     Assign {
         name : Token,

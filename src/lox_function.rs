@@ -2,7 +2,6 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{environment::Environment, error_type::LoxError, interpreter::Interpreter, lox_callable::LoxCallable, stmt::Stmt, token::LiteralType};
 
-
 pub struct LoxFunction {
     pub declaration: Stmt,
     pub closure: Rc<RefCell<Environment>>

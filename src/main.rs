@@ -1,11 +1,15 @@
+use std::cell::RefCell;
 use std::env;
 use std::fs;
 use std::io;
 use std::io::Write;
 use std::process;
+use std::rc::Rc;
 
+use crate::error_type::LoxError;
 use crate::interpreter::Interpreter;
 use crate::parser::Parser;
+use crate::resolver::Resolver;
 use crate::scanner::Scanner;
 use crate::stmt::Stmt;
 use crate::token::Token;
@@ -23,6 +27,7 @@ mod environment;
 mod lox_callable;
 mod native_functions;
 mod lox_function;
+mod resolver;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -67,7 +72,7 @@ fn run_prompt() {
     }
 }
 
-fn run(source: &str) -> Result<(), error_type::LoxError> {
+fn run(source: &str) -> Result<(), LoxError> {
     let mut scanner = Scanner::new(source.to_string());
     
     let tokens: Vec<Token> = scanner.scan_tokens();
@@ -78,10 +83,16 @@ fn run(source: &str) -> Result<(), error_type::LoxError> {
 
     let mut parser = Parser::new(tokens);
     let statements: Vec<Stmt> = parser.parse()?;
+
+    let interpreter = Rc::new(RefCell::new(Interpreter::new()));
     
-    let mut interpreter = Interpreter::new();
+    let mut resolver = Resolver::new(Rc::clone(&interpreter));
+    resolver.resolve_stmts(statements.clone().into_iter().map(Box::new).collect()); 
+    if resolver.hadError {
+        return Ok(())
+    }
     for statement in statements {
-        interpreter.execute(statement)?;
+        interpreter.borrow_mut().execute(statement)?;
     }
 
     Ok(())

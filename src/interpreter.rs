@@ -9,12 +9,13 @@ use crate::{
     token::{LiteralType, Token, literal_stringify},
     token_type::TokenType,
 };
-use std::cell::RefCell;
+use std::{cell::RefCell, collections::HashMap};
 use std::rc::Rc;
 
 pub struct Interpreter {
     pub environment: Rc<RefCell<Environment>>,
     pub globals: Rc<RefCell<Environment>>,
+    locals: HashMap<Expr, usize>
 }
 
 impl Interpreter {
@@ -28,6 +29,7 @@ impl Interpreter {
         Self {
             environment: Rc::clone(&globals),
             globals,
+            locals: HashMap::new()
         }
     }
 
@@ -73,13 +75,70 @@ impl Interpreter {
         }
     }
 
+    pub fn get_at(&self, distance: usize, name: &Token) -> Result<LiteralType, LoxError> {
+        let env = if distance == 0 {
+            Rc::clone(&self.environment)
+        } else {
+            // Walk up the enclosing chain
+            let mut current = Rc::clone(&self.environment);
+            for _ in 0..distance {
+                let next = {
+                    let borrowed = current.borrow();
+                    borrowed.enclosing.as_ref()
+                        .ok_or(LoxError::RuntimeError)?
+                        .clone()
+                };
+                current = next;
+            }
+            current
+        };
+        
+        env.borrow_mut().get(name)
+    }
+
+    fn look_up_variable(&mut self, name: Token, expr:Expr) -> Result<LiteralType, LoxError> {
+        let distance = self.locals.get(&expr);
+        if let Some(distance) = distance {
+            return self.get_at(*distance, &name)
+        } else {
+            return self.globals.borrow_mut().get(&name);
+        }
+    }
+
+    fn assign_at(&mut self, distance: usize, name: Token, value: LiteralType) -> Result<(), LoxError> {
+        let env = if distance == 0 {
+            Rc::clone(&self.environment)
+        } else {
+            // Walk up the enclosing chain
+            let mut current = Rc::clone(&self.environment);
+            for _ in 0..distance {
+                let next = {
+                    let borrowed = current.borrow();
+                    borrowed.enclosing.as_ref()
+                        .ok_or(LoxError::RuntimeError)?
+                        .clone()
+                };
+                current = next;
+            }
+            current
+        };
+
+        env.borrow_mut().assign(&name, &value)?;
+        return Ok(())
+    }
+
     pub fn interpret(&mut self, expr: Expr) -> Result<LiteralType, LoxError> {
-        match expr {
+        match expr.clone() {
             Expr::Assign { name, value } => {
                 let evaluated_value: LiteralType = self.evaluate(*value)?;
-                self.environment
+                if let Some(distance) = self.locals.get(&expr) {
+                    self.assign_at(*distance, name, evaluated_value.clone())?;
+                } else {
+                    self.globals
                     .borrow_mut()
                     .assign(&name, &evaluated_value)?;
+                }
+
                 return Ok(evaluated_value);
             }
             Expr::Binary {
@@ -304,7 +363,7 @@ impl Interpreter {
                     _ => return Ok(LiteralType::None),
                 }
             }
-            Expr::Variable { name } => return self.environment.borrow_mut().get(&name),
+            Expr::Variable { name } => return self.look_up_variable(name, expr),
         }
     }
 
@@ -403,5 +462,9 @@ impl Interpreter {
                 return Ok(());
             }
         }
+    }
+
+    pub fn resolve(&mut self, expr: Expr, depth: usize) {
+        self.locals.insert(expr, depth);
     }
 }

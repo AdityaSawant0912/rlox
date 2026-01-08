@@ -1,13 +1,33 @@
-use std::{fmt::Display, rc::Rc};
+use std::{fmt::Display, hash::Hash, rc::Rc};
 use crate::{lox_callable::LoxCallable, token_type};
 
-#[derive()]
 pub enum LiteralType {
     Number(f64),
     String(String),
     Boolean(bool),
     None,
     Callable(Rc<dyn LoxCallable>)
+}
+
+impl Eq for LiteralType {}
+
+impl Hash for LiteralType {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            LiteralType::Number(n) => {
+                // Hash the bit representation of the float
+                n.to_bits().hash(state);
+            }
+            LiteralType::String(s) => s.hash(state),
+            LiteralType::Boolean(b) => b.hash(state),
+            LiteralType::None => 0.hash(state),
+            LiteralType::Callable(_) => {
+                // Functions can't really be hashed meaningfully
+                // You could hash a unique ID or just hash a constant
+                "callable".hash(state);
+            }
+        }
+    }
 }
 
 impl Clone for LiteralType {
@@ -47,7 +67,7 @@ impl Display for LiteralType {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Token{
     pub _type: token_type::TokenType,
     pub lexeme: String,

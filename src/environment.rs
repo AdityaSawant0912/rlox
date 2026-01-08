@@ -10,7 +10,7 @@ use crate::{
 #[derive(Clone)]
 pub struct Environment {
     values: HashMap<String, LiteralType>,
-    enclosing: Option<Rc<RefCell<Environment>>>,
+    pub enclosing: Option<Rc<RefCell<Environment>>>,
 }
 
 // impl Default for Environment {

@@ -1,4 +1,5 @@
 var a = "global";
+return;
 {
   fun showA() {
     print a;
