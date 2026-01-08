@@ -14,20 +14,20 @@ use crate::scanner::Scanner;
 use crate::stmt::Stmt;
 use crate::token::Token;
 // mod ast_printer;
+mod environment;
 mod error;
 mod error_type;
 mod expr;
 mod interpreter;
+mod lox_callable;
+mod lox_function;
+mod native_functions;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 mod token;
 mod token_type;
-mod environment;
-mod lox_callable;
-mod native_functions;
-mod lox_function;
-mod resolver;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -74,7 +74,7 @@ fn run_prompt() {
 
 fn run(source: &str) -> Result<(), LoxError> {
     let mut scanner = Scanner::new(source.to_string());
-    
+
     let tokens: Vec<Token> = scanner.scan_tokens();
 
     // for token in &tokens {
@@ -85,11 +85,12 @@ fn run(source: &str) -> Result<(), LoxError> {
     let statements: Vec<Stmt> = parser.parse()?;
 
     let interpreter = Rc::new(RefCell::new(Interpreter::new()));
-    
+
     let mut resolver = Resolver::new(Rc::clone(&interpreter));
-    resolver.resolve_stmts(statements.clone().into_iter().map(Box::new).collect()); 
-    if resolver.hadError {
-        return Ok(())
+    resolver.resolve_stmts(statements.clone().into_iter().map(Box::new).collect());
+    if resolver.had_error {
+        println!("{}", LoxError::ParseError);
+        process::exit(65)
     }
     for statement in statements {
         interpreter.borrow_mut().execute(statement)?;

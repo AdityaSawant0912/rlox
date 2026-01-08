@@ -11,8 +11,8 @@ use crate::{
 pub struct Resolver {
     interpreter: Rc<RefCell<Interpreter>>,
     scopes: Vec<HashMap<String, bool>>,
-    currentFunction: FunctionType,
-    pub hadError: bool
+    current_function: FunctionType,
+    pub had_error: bool
 }
 
 #[derive(Clone, PartialEq)]
@@ -26,8 +26,8 @@ impl Resolver {
         Self {
             interpreter,
             scopes: Vec::new(),
-            currentFunction: FunctionType::None,
-            hadError: false
+            current_function: FunctionType::None,
+            had_error: false
         }
     }
 
@@ -45,7 +45,7 @@ impl Resolver {
         }
         if self.scopes.last_mut().unwrap().contains_key(&name.lexeme) {
         token_error(name, "Already a variable with this name in this scope.");
-        self.hadError = true;
+        self.had_error = true;
         } else {
             self.scopes.last_mut().unwrap().insert(name.lexeme, false);
         }
@@ -73,8 +73,8 @@ impl Resolver {
                 params,
                 body,
             } => {
-                let enclosingFunction = self.currentFunction.clone();
-                self.currentFunction = _type;
+                let enclosing_function = self.current_function.clone();
+                self.current_function = _type;
 
                 self.begin_scope();
                 for param in params {
@@ -84,7 +84,7 @@ impl Resolver {
                 self.resolve_stmts(body);
                 self.end_scope();
 
-                self.currentFunction = enclosingFunction;
+                self.current_function = enclosing_function;
             }
             _ => {}
         }
@@ -100,7 +100,7 @@ impl Resolver {
                         name.clone(),
                         "Can't read local variable in its own initializer.",
                     );
-                    self.hadError = true;
+                    self.had_error = true;
                 }
                 self.resolve_local(expr, name);
             }
@@ -190,9 +190,9 @@ impl Resolver {
             }
             Stmt::Return { keyword, value } => {
 
-                if self.currentFunction == FunctionType::None {
+                if self.current_function == FunctionType::None {
                     token_error(keyword, "Can't return from top-level code.");
-                    self.hadError = true;
+                    self.had_error = true;
                 }
 
                 if let Expr::Literal {

@@ -1,5 +1,5 @@
 var a = "global";
-return;
+// return;
 {
   fun showA() {
     print a;
