@@ -18,7 +18,8 @@ pub struct Resolver {
 #[derive(Clone, PartialEq)]
 enum FunctionType {
     None, 
-    Function
+    Function,
+    Method
 }
 
 impl Resolver {
@@ -126,6 +127,9 @@ impl Resolver {
                     self.resolve_expr(*argument);
                 }
             }
+            Expr::Get { object, name }  => {
+                self.resolve_expr(*object);
+            }
             Expr::Grouping { expression } => {
                 self.resolve_expr(*expression);
             }
@@ -137,6 +141,10 @@ impl Resolver {
             } => {
                 self.resolve_expr(*left);
                 self.resolve_expr(*right);
+            }
+            Expr::Set { object, name: _, value } => {
+                self.resolve_expr(*value);
+                self.resolve_expr(*object);
             }
             Expr::Unary { operator: _, right } => {
                 self.resolve_expr(*right);
@@ -153,6 +161,9 @@ impl Resolver {
             }
             Stmt::Class { name, methods } => {
                 self.declare(name.clone());
+                for method in methods {
+                    self.resolve_function(*method, FunctionType::Method);
+                }
                 self.define(name);
             }
             Stmt::Var { name, initializer } => {

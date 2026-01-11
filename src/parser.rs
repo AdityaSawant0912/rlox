@@ -172,6 +172,9 @@ impl Parser {
         loop {
             if self._match(Vec::from([TokenType::LeftParen])) {
                 expr = self.finish_call(&expr)?;
+            } else if self._match(Vec::from([TokenType::Dot])) {
+                let name: Token = self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
+                expr = Expr::Get { object: Box::new(expr), name }
             } else {
                 break;
             }
@@ -326,6 +329,8 @@ impl Parser {
                     name,
                     value: Box::new(value),
                 });
+            } else if let Expr::Get { object, name } = expr {
+                return Ok(Expr::Set { object, name, value: Box::new(value) })
             }
             return Err(self.error(equals, "Invalid assignment target."));
         }
