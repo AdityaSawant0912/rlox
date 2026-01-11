@@ -151,6 +151,10 @@ impl Resolver {
                 self.resolve_stmts(statements);
                 self.end_scope();
             }
+            Stmt::Class { name, methods } => {
+                self.declare(name.clone());
+                self.define(name);
+            }
             Stmt::Var { name, initializer } => {
                 self.declare(name.clone());
                 if let Expr::Literal {

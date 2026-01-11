@@ -28,6 +28,8 @@ mod scanner;
 mod stmt;
 mod token;
 mod token_type;
+mod lox_class;
+mod lox_instance;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

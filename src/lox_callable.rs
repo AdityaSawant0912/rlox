@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{error_type::LoxError, interpreter::Interpreter, token::LiteralType};
 
 

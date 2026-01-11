@@ -1,13 +1,5 @@
 use crate::{
-    environment::Environment,
-    error::token_error,
-    error_type::LoxError,
-    expr::Expr,
-    lox_function::LoxFunction,
-    native_functions::ClockNative,
-    stmt::Stmt,
-    token::{LiteralType, Token, literal_stringify},
-    token_type::TokenType,
+    environment::Environment, error::token_error, error_type::LoxError, expr::Expr, lox_class::LoxClass, lox_function::LoxFunction, native_functions::ClockNative, stmt::Stmt, token::{LiteralType, Token, literal_stringify}, token_type::TokenType
 };
 use std::{cell::RefCell, collections::HashMap};
 use std::rc::Rc;
@@ -393,6 +385,12 @@ impl Interpreter {
                     &self.environment,
                 )))));
                 return self.execute_block(statements, environment);
+            }
+            Stmt::Class { name, methods:_ } => {
+                self.environment.borrow_mut().define(&name.lexeme, &LiteralType::None);
+                let klass: LoxClass = LoxClass::new(&name.lexeme);
+                let _ = self.environment.borrow_mut().assign(&name, &LiteralType::Class(klass));
+                return Ok(())
             }
             Stmt::Expression { expression } => {
                 self.interpret(expression)?;

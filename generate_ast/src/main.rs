@@ -16,7 +16,7 @@ fn define_ast(output_path: &str, basename: &str, types: Vec<&str>) -> std::io::R
         file.write(b"    token::{LiteralType, Token}\n")?;
     }
     file.write(b"};\n")?;
-    file.write(b"\n#[derive(Debug, Clone)]")?;
+    file.write(b"\n#[derive(Clone, PartialEq, Eq, Hash)]\n")?;
 
     
     file.write(format!("pub enum {} {{\n", basename).as_bytes())?;
@@ -60,6 +60,7 @@ fn main() -> std::io::Result<()> {
         "Stmt",
         Vec::from([
             "Block      : statements Vec<Box<Stmt>>",
+            "Class      : name Token, methods Vec<Box<Stmt>>",
             "Expression : expression Expr",
             "Function   : name Token, params Vec<Token>, body Vec<Box<Stmt>>",
             "If         : condition Expr, then_branch Box<Stmt>, else_branch Option<Box<Stmt>>",

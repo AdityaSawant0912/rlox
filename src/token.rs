@@ -1,12 +1,14 @@
 use std::{fmt::Display, hash::Hash, rc::Rc};
-use crate::{lox_callable::LoxCallable, token_type};
+use crate::{lox_callable::LoxCallable, lox_class::LoxClass, lox_instance::LoxInstance, token_type};
 
 pub enum LiteralType {
     Number(f64),
     String(String),
     Boolean(bool),
     None,
-    Callable(Rc<dyn LoxCallable>)
+    Callable(Rc<dyn LoxCallable>),
+    Instance(LoxInstance),
+    Class(LoxClass)
 }
 
 impl Eq for LiteralType {}
@@ -26,6 +28,12 @@ impl Hash for LiteralType {
                 // You could hash a unique ID or just hash a constant
                 "callable".hash(state);
             }
+            LiteralType::Instance(_) => {
+                "instance".hash(state);
+            }
+            LiteralType::Class(_) => {
+                "class".hash(state);
+            }
         }
     }
 }
@@ -38,6 +46,8 @@ impl Clone for LiteralType {
             Self::String(s) => Self::String(s.clone()),
             Self::Boolean(b) => Self::Boolean(*b),
             Self::Callable(c) => Self::Callable(Rc::clone(c)), // Cheap clone!
+            Self::Instance(i) => Self::Instance(i.clone()), // Cheap clone!
+            Self::Class(c) => Self::Class(c.clone()), // Cheap clone!
         }
     }
 }
@@ -50,6 +60,8 @@ impl PartialEq for LiteralType {
             (Self::String(a), Self::String(b)) => a == b,
             (Self::Boolean(a), Self::Boolean(b)) => a == b,
             (Self::Callable(_), Self::Callable(_)) => false, // Functions not comparable
+            (Self::Instance(_), Self::Instance(_)) => false, // Classes not comparable
+            (Self::Class(_), Self::Class(_)) => false, // Classes not comparable
             _ => false,
         }
     }
@@ -62,7 +74,9 @@ impl Display for LiteralType {
             LiteralType::String(s) => write!(f, "{}", s),
             LiteralType::Boolean(b) => write!(f, "{}", b),
             LiteralType::None => write!(f, "None"),
-            LiteralType::Callable(_c) => write!(f, "<fn>"),
+            LiteralType::Callable(_) => write!(f, "<fn>"),
+            LiteralType::Instance(i) => write!(f, "{}", i),
+            LiteralType::Class(c) => write!(f, "{}", c)
         }
     }
 }
@@ -88,6 +102,8 @@ pub fn literal_stringify(value: LiteralType) -> String {
         LiteralType:: Boolean(b) => return format!("{b}"),
         LiteralType:: Number(n) => return format!("{n}"),
         LiteralType:: Callable(_c) => return format!("<fn>"),
+        LiteralType:: Instance(i) => return format!("{i}"),
+        LiteralType:: Class(i) => return format!("{i}"),
     }
 }
 

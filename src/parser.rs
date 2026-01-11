@@ -483,6 +483,31 @@ impl Parser {
         }
         return self.expression_statement();
     }
+
+    fn class_declaration(&mut self) -> Result<Stmt, LoxError> {
+        let name = self.consume(TokenType::Identifier, &format!("Expect class name."))?;
+        self.consume(
+            TokenType::LeftBrace,
+            &format!("Expect '{{' before class body."),
+        )?;
+        
+        let mut methods: Vec<Box<Stmt>> = Vec::new();
+
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            match self.function("method") {
+                Ok(method) => methods.push(Box::new(method)),
+                Err(e) =>  return Err(e)
+            }
+        }
+        
+        self.consume(
+            TokenType::RightBrace,
+            &format!("Expect '}}' after class body."),
+        )?;
+
+        return Ok(Stmt::Class { name, methods })
+    }
+
     fn function(&mut self, kind: &str) -> Result<Stmt, LoxError> {
         let name = self.consume(TokenType::Identifier, &format!("Expect {} name.", kind))?;
         self.consume(
@@ -531,6 +556,15 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Option<Stmt> {
+        if self._match(Vec::from([TokenType::Class])) {
+            match self.class_declaration() {
+                Ok(stmt) => return Some(stmt),
+                Err(_e) => {
+                    self.synchronize();
+                    return None;
+                }
+            }
+        }
         if self._match(Vec::from([TokenType::Fun])) {
             match self.function("function") {
                 Ok(stmt) => return Some(stmt),
