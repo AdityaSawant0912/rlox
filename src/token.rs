@@ -1,4 +1,4 @@
-use std::{fmt::Display, hash::Hash, rc::Rc};
+use std::{cell::RefCell, fmt::Display, hash::Hash, rc::Rc};
 use crate::{lox_callable::LoxCallable, lox_class::LoxClass, lox_instance::LoxInstance, token_type};
 
 pub enum LiteralType {
@@ -7,7 +7,7 @@ pub enum LiteralType {
     Boolean(bool),
     None,
     Callable(Rc<dyn LoxCallable>),
-    Instance(LoxInstance),
+    Instance(Rc<RefCell<LoxInstance>>),
     Class(LoxClass)
 }
 
@@ -75,7 +75,7 @@ impl Display for LiteralType {
             LiteralType::Boolean(b) => write!(f, "{}", b),
             LiteralType::None => write!(f, "None"),
             LiteralType::Callable(_) => write!(f, "<fn>"),
-            LiteralType::Instance(i) => write!(f, "{}", i),
+            LiteralType::Instance(i) => write!(f, "{}", i.borrow()),
             LiteralType::Class(c) => write!(f, "{}", c)
         }
     }
@@ -102,7 +102,7 @@ pub fn literal_stringify(value: LiteralType) -> String {
         LiteralType:: Boolean(b) => return format!("{b}"),
         LiteralType:: Number(n) => return format!("{n}"),
         LiteralType:: Callable(_c) => return format!("<fn>"),
-        LiteralType:: Instance(i) => return format!("{i}"),
+        LiteralType:: Instance(i) => return format!("{}", i.borrow()),
         LiteralType:: Class(i) => return format!("{i}"),
     }
 }

@@ -25,7 +25,7 @@ impl LoxClass {
 impl LoxCallable for LoxClass {
     fn call(&self, _: &mut Interpreter, _: Vec<LiteralType>) 
         -> Result<LiteralType, LoxError> {
-        let instance = LoxInstance::new(RefCell::new(Rc::new(self.clone())));
+        let instance = Rc::new(RefCell::new(LoxInstance::new(RefCell::new(Rc::new(self.clone())))));
         return Ok(LiteralType::Instance(instance))
     }
 

@@ -136,7 +136,7 @@ impl Resolver {
                     self.resolve_expr(*argument);
                 }
             }
-            Expr::Get { object, name }  => {
+            Expr::Get { object, name: _ }  => {
                 self.resolve_expr(*object);
             }
             Expr::Grouping { expression } => {

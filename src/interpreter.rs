@@ -1,14 +1,5 @@
 use crate::{
-    environment::Environment,
-    error::token_error,
-    error_type::LoxError,
-    expr::Expr,
-    lox_class::LoxClass,
-    lox_function::LoxFunction,
-    native_functions::ClockNative,
-    stmt::Stmt,
-    token::{LiteralType, Token, literal_stringify},
-    token_type::TokenType,
+    environment::Environment, error::token_error, error_type::LoxError, expr::Expr, lox_class::LoxClass, lox_function::LoxFunction, lox_instance::LoxInstance, native_functions::ClockNative, stmt::Stmt, token::{LiteralType, Token, literal_stringify}, token_type::TokenType
 };
 use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
@@ -337,7 +328,7 @@ impl Interpreter {
             Expr::Get { object, name } => {
                 let object = self.evaluate(*object)?;
                 if let LiteralType::Instance(object) = object {
-                    return object.get(name);
+                    return LoxInstance::get(object, name);
                 }
                 token_error(name, "Only instances have properties.");
                 return Err(LoxError::RuntimeError);
@@ -367,9 +358,9 @@ impl Interpreter {
                 value,
             } => {
                 let object = self.evaluate(*object)?;
-                if let LiteralType::Instance(mut object) = object {
+                if let LiteralType::Instance(object) = object {
                     let value = self.evaluate(*value)?;
-                    object.set(name, value.clone());
+                    object.borrow_mut().set(name, value.clone());
                     return Ok(value);
                 }
                 token_error(name, "Only instances have fields");
