@@ -375,6 +375,9 @@ impl Interpreter {
                 token_error(name, "Only instances have fields");
                 return Err(LoxError::RuntimeError);
             }
+            Expr::This { keyword } =>{
+                return self.look_up_variable(keyword, expr);
+            }
             Expr::Unary { operator, right } => {
                 let evaluated_right: LiteralType = self.evaluate(*right)?;
                 match operator._type {

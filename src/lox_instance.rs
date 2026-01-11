@@ -24,7 +24,7 @@ impl LoxInstance {
         let binding = self.klass.borrow_mut();
         let method = binding.find_method(&name.lexeme);
         if let Some(method) = method {
-            return Ok(LiteralType::Callable(Rc::new(method.clone()))) ;
+            return Ok(method.bind(self.clone()))
         }
 
         token_error(name.clone(), &format!("Undefined property '{}'.", name.lexeme));

@@ -8,18 +8,26 @@ use crate::{
     token::{LiteralType, Token},
 };
 
-pub struct Resolver {
-    interpreter: Rc<RefCell<Interpreter>>,
-    scopes: Vec<HashMap<String, bool>>,
-    current_function: FunctionType,
-    pub had_error: bool
-}
-
 #[derive(Clone, PartialEq)]
 enum FunctionType {
     None, 
     Function,
     Method
+}
+
+#[derive(Clone, PartialEq)]
+enum ClassType {
+    None, 
+    Class
+}
+
+
+pub struct Resolver {
+    interpreter: Rc<RefCell<Interpreter>>,
+    scopes: Vec<HashMap<String, bool>>,
+    current_function: FunctionType,
+    current_class: ClassType,
+    pub had_error: bool
 }
 
 impl Resolver {
@@ -28,6 +36,7 @@ impl Resolver {
             interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
             had_error: false
         }
     }
@@ -146,6 +155,13 @@ impl Resolver {
                 self.resolve_expr(*value);
                 self.resolve_expr(*object);
             }
+            Expr::This { keyword } => {
+                if self.current_class == ClassType::None {
+                    token_error(keyword, "Can't use 'this' outside of a class.");
+                    return;
+                }
+                self.resolve_local(expr, keyword);
+            }
             Expr::Unary { operator: _, right } => {
                 self.resolve_expr(*right);
             }
@@ -160,11 +176,17 @@ impl Resolver {
                 self.end_scope();
             }
             Stmt::Class { name, methods } => {
+                let enclosing_class = self.current_class.clone();
+                self.current_class = ClassType::Class;
                 self.declare(name.clone());
+                self.begin_scope();
+                self.scopes.last_mut().unwrap().insert("this".to_string(), true);
                 for method in methods {
                     self.resolve_function(*method, FunctionType::Method);
                 }
                 self.define(name);
+                self.end_scope();
+                self.current_class = enclosing_class;
             }
             Stmt::Var { name, initializer } => {
                 self.declare(name.clone());

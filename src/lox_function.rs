@@ -1,6 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, env, rc::Rc};
 
-use crate::{environment::Environment, error_type::LoxError, interpreter::Interpreter, lox_callable::LoxCallable, stmt::Stmt, token::LiteralType};
+use crate::{environment::Environment, error_type::LoxError, interpreter::Interpreter, lox_callable::LoxCallable, lox_instance::LoxInstance, stmt::Stmt, token::LiteralType};
 
 #[derive(Clone)]
 pub struct LoxFunction {
@@ -15,6 +15,16 @@ impl LoxFunction {
             closure
         }
     }
+
+    pub fn bind(&self, instance: LoxInstance) -> LiteralType {
+        let environment = Rc::new(RefCell::new(Environment::new(Some(Rc::clone(
+            &self.closure,
+        )))));
+        environment.borrow_mut().define("this", &LiteralType::Instance(instance));
+
+        return LiteralType::Callable(Rc::new(LoxFunction::new(self.declaration.clone(), environment)))
+    }
+
 }
 
 impl LoxCallable for LoxFunction {

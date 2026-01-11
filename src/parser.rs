@@ -104,6 +104,11 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr, LoxError> {
+        if self._match(Vec::from([TokenType::This])) {
+            return Ok(Expr::This {
+                keyword: self.previous(),
+            });
+        }
         if self._match(Vec::from([TokenType::False])) {
             return Ok(Expr::Literal {
                 value: LiteralType::Boolean(false),
